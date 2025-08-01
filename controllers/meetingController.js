@@ -8,17 +8,15 @@ module.exports.createMeeting = async (req, res) => {
     try {
         const { title, participants, startTime, endTime, description, location } = req.body;
 
-        // Check if user is authenticated
         const organizer = req.user?.userid;
 
         if (!organizer) {
-            return res.status(401).json({ message: "Unauthorized: Organizer not found" });
+            return res.status(401).json({ success: false, message: "Unauthorized: Organizer not found" });
         }
 
         const organizerData = await userModel.findOne({ _id: organizer });
-        // Optional: Validate required fields
         if (!title || !participants || !startTime || !endTime) {
-            return res.status(400).json({ message: "Missing required fields" });
+            return res.status(400).json({ success: false, message: "Missing required fields" });
         }
 
         const participantUsers = await userModel.find({ _id: { $in: participants } }).select('email');
@@ -27,7 +25,7 @@ module.exports.createMeeting = async (req, res) => {
 
         const meetingData = {
             title: title,
-            startDateTime: startTime, 
+            startDateTime: startTime,
             endDateTime: endTime,
             description: description,
             location: location,
@@ -49,7 +47,7 @@ module.exports.createMeeting = async (req, res) => {
             calendarLink
         });
 
-        
+
 
 
         const meeting = await meetingModel.create({
@@ -62,11 +60,11 @@ module.exports.createMeeting = async (req, res) => {
             location
         });
 
-        return res.status(201).json({ message: "Meeting created successfully", meeting });
+        return res.status(201).json({ success: true, message: "Meeting created successfully", meeting });
 
     } catch (err) {
         console.error("Failed to create meeting", err);
-        return res.status(500).json({ message: "Internal Server Error" });
+        return res.status(500).json({ success: false, message: "Internal Server Error" });
     }
 };
 
@@ -80,11 +78,11 @@ module.exports.getAllMeetings = async (req, res) => {
             ]
         }).sort({ startTime: 1 });
 
-        return res.status(200).json({ meetingsData: meetings });
+        return res.status(200).json({ success: true, meetingsData: meetings });
 
     } catch (err) {
         debug('Error in getting meeting', err);
-        return res.status(500).json({ message: "Internal Server Error" });
+        return res.status(500).json({ success: false, message: "Internal Server Error" });
     }
 }
 
@@ -96,11 +94,11 @@ module.exports.updateMeeting = async (req, res) => {
 
         const meeting = await meetingModel.findById(meetingId);
         if (!meeting) {
-            return res.status(404).json({ message: "Meeting not found" });
+            return res.status(404).json({ success: false, message: "Meeting not found" });
         }
 
         if (meeting.organizer.toString() !== userId.toString()) {
-            return res.status(403).json({ message: "Unauthorized to update this meeting" });
+            return res.status(403).json({ success: false, message: "Unauthorized to update this meeting" });
         }
 
         const { title, participants, startTime, endTime, description, location } = req.body;
@@ -114,11 +112,11 @@ module.exports.updateMeeting = async (req, res) => {
 
         await meeting.save();
 
-        return res.status(200).json({ message: "Meeting updated successfully", updatedMeeting: meeting });
+        return res.status(200).json({ success: true, message: "Meeting updated successfully", updatedMeeting: meeting });
 
     } catch (err) {
         debug("Update Meeting Error:", err);
-        return res.status(500).json({ message: "Internal Server Error" });
+        return res.status(500).json({ success: false, message: "Internal Server Error" });
     }
 
 }
@@ -131,20 +129,20 @@ module.exports.deleteMeeting = async (req, res) => {
 
         const meeting = await meetingModel.findById(meetingId);
 
-        if (!meeting) return res.status(404).json({ message: "Meeting not found" });
+        if (!meeting) return res.status(404).json({ success: false, message: "Meeting not found" });
 
         if (meeting.organizer.toString() !== userId.toString()) {
-            return res.status(403).json({ message: "Unauthorized to update this meeting" });
+            return res.status(403).json({ success: false, message: "Unauthorized to update this meeting" });
         }
 
         await meetingModel.findByIdAndDelete(meetingId);
 
-        return res.status(200).json({ message: "Meeting Deleted Successfully" });
+        return res.status(200).json({ success: true, message: "Meeting Deleted Successfully" });
 
 
     } catch (err) {
         debug("Failed to Delete", err);
-        return res.status(500).json({ message: "Internal Server Error" });
+        return res.status(500).json({ success: false, message: "Internal Server Error" });
 
     }
 }
